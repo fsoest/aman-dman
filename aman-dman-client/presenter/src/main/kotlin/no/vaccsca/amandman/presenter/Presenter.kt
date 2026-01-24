@@ -395,13 +395,7 @@ class Presenter(
 
     override fun beginRunwaySelection(runwayEvent: RunwayEvent, onClose: (runway: String?) -> Unit) {
         if (runwayEvent is RunwayArrivalEvent) {
-            val imTheTrackingController = controllerInfo?.callsign != null && runwayEvent.trackingController == controllerInfo?.positionId
-            if (imTheTrackingController) {
-                view.openSelectRunwayDialog(runwayEvent, availableRunways, onClose)
-            } else {
-                onClose(null)
-                logger.debug("User is not the tracking controller for ${runwayEvent.callsign}, will not prompt for runway. Tracking controller is ${runwayEvent.trackingController}, my positionId is ${controllerInfo?.positionId}")
-            }
+            view.openSelectRunwayDialog(runwayEvent, availableRunways, onClose)
         } else {
             logger.error("selectRunway called with unsupported event type")
         }
