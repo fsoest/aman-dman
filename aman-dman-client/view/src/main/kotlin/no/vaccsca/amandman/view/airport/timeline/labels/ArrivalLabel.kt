@@ -99,6 +99,19 @@ class ArrivalLabel(
 
     private fun showPopupMenu(e: MouseEvent) {
         val popup = AmanPopupMenu("Flight Options") {
+            item("Select Runway", action = {
+                presenterInterface.beginRunwaySelection(arrivalEvent) { newRunway ->
+                    if (newRunway != null && newRunway != arrivalEvent.runway) {
+                        presenterInterface.onLabelDragEnd(
+                            airportIcao = arrivalEvent.airportIcao,
+                            timelineEvent = arrivalEvent,
+                            newScheduledTime = arrivalEvent.scheduledTime,
+                            newRunway = newRunway
+                        )
+                    }
+                }
+            })
+
             item("Re-schedule", action = {
                 presenterInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
             })
