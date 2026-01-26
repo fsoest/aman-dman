@@ -103,7 +103,7 @@ class ArrivalLabel(
                 presenterInterface.beginRunwaySelection(arrivalEvent) { newRunway ->
                     if (newRunway != null && newRunway != arrivalEvent.runway) {
                         presenterInterface.onSelectRunwayClicked(
-                            arrivalEvent.runway,
+                            arrivalEvent.airportIcao,
                             arrivalEvent.callsign,
                             newRunway)
                     }
