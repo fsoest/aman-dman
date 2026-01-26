@@ -139,6 +139,7 @@ class PlannerServiceMaster(
             // Assign runway in atc client
             atcClient.assignRunway(callsign, newRunway)
             plannerState.runwayOverrides[callsign] = newRunway
+            logger.info("Overrides: ${plannerState.runwayOverrides}")
             this.reSchedule(callsign)
         }
     }
