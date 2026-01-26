@@ -102,12 +102,10 @@ class ArrivalLabel(
             item("Select Runway", action = {
                 presenterInterface.beginRunwaySelection(arrivalEvent) { newRunway ->
                     if (newRunway != null && newRunway != arrivalEvent.runway) {
-                        presenterInterface.onLabelDragEnd(
-                            airportIcao = arrivalEvent.airportIcao,
-                            timelineEvent = arrivalEvent,
-                            newScheduledTime = arrivalEvent.scheduledTime, // Keep the same time
-                            newRunway = newRunway
-                        )
+                        presenterInterface.onSelectRunwayClicked(
+                            arrivalEvent.runway,
+                            arrivalEvent.callsign,
+                            newRunway)
                     }
                 }
             })

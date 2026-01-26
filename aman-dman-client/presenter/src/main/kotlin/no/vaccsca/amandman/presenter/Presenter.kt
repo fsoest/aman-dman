@@ -381,6 +381,10 @@ class Presenter(
             }
     }
 
+    override fun onSelectRunwayClicked(airportIcao: String, callsign: String, newRunway: String) {
+        plannerManager.getServiceForAirport(airportIcao).updateRunway(callsign, newRunway)
+    }
+
     override fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double) {
         plannerManager.getServiceForAirport(airportIcao).setMinimumSpacing(minimumSpacingDistanceNm)
             .onFailure {
