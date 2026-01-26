@@ -206,11 +206,18 @@ class PlannerServiceMaster(
     private fun makeRunwayArrivalEvents(arrivals: List<AtcClientArrivalData>): Pair<List<RunwayArrivalEvent>, List<NonSequencedEvent>> {
         val runwayArrivalEvents = mutableListOf<RunwayArrivalEvent>()
         val nonSequencedEvents = mutableListOf<NonSequencedEvent>()
+
+        // Clean overrides map
+        val activeCallsigns = arrivals.map { it.callsign }.toSet()
+        plannerState.runwayOverrides.keys.retainAll(activeCallsigns)
         arrivals.forEach { arrival ->
-            // Clean overrides map
-            val activeCallsigns = arrivals.map { it.callsign }.toSet()
-            plannerState.runwayOverrides.keys.retainAll(activeCallsigns)
-            val runway = plannerState.runwayOverrides[arrival.callsign] ?: arrival.assignedRunway
+            // If the override runway is the same as Euroscope's runway, delete the override to prevent locking.
+            val runway = plannerState.runwayOverrides[arrival.callsign]
+            if (runway != null) {
+                if (runway == arrival.assignedRunway) {
+                    plannerState.runwayOverrides.remove(arrival.callsign)
+                }
+            }
             val updatedArrival = arrival.copy(
                 assignedRunway = runway ?: arrival.assignedRunway,
             )
