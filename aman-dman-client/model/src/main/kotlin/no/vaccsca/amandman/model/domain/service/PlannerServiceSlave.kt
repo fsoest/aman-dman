@@ -53,7 +53,6 @@ class PlannerServiceSlave(
     }
 
     private fun syncRunwaysToEuroscope(events: List<TimelineEvent>) {
-        // If we don't know who we are yet, we can't determine "my" aircraft
         val myPositionId = controllerInfo?.positionId ?: return
         events.filterIsInstance<RunwayArrivalEvent>().forEach { event ->
             if (event.trackingController == myPositionId) {
