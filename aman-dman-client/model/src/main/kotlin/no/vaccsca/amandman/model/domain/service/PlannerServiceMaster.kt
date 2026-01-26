@@ -206,10 +206,13 @@ class PlannerServiceMaster(
     private fun makeRunwayArrivalEvents(arrivals: List<AtcClientArrivalData>): Pair<List<RunwayArrivalEvent>, List<NonSequencedEvent>> {
         val runwayArrivalEvents = mutableListOf<RunwayArrivalEvent>()
         val nonSequencedEvents = mutableListOf<NonSequencedEvent>()
-
         arrivals.forEach { arrival ->
+            val runway = plannerState.runwayOverrides[arrival.callsign] ?: arrival.assignedRunway
+            val updatedArrival = arrival.copy(
+                assignedRunway = runway ?: arrival.assignedRunway,
+            )
             try {
-                val arrivalEvent = ArrivalEventService.createRunwayArrivalEvent(airport, arrival, plannerState.weatherData)
+                val arrivalEvent = ArrivalEventService.createRunwayArrivalEvent(airport, updatedArrival, plannerState.weatherData)
                 runwayArrivalEvents.add(arrivalEvent)
             } catch (e: NoAssignedRunwayException) {
                 nonSequencedEvents.add(
@@ -217,18 +220,18 @@ class PlannerServiceMaster(
                 )
             } catch (e: UnknownAircraftTypeException) {
                 nonSequencedEvents.add(
-                    makeNonSequencedEvent(arrival, NonSequencedReason.MISSING_PERFORMANCE_DATA)
+                    makeNonSequencedEvent(updatedArrival, NonSequencedReason.MISSING_PERFORMANCE_DATA)
                 )
             } catch (e: ReachedEndOfRouteException) {
                 nonSequencedEvents.add(
-                    makeNonSequencedEvent(arrival, NonSequencedReason.EMPTY_ROUTE)
+                    makeNonSequencedEvent(updatedArrival, NonSequencedReason.EMPTY_ROUTE)
                 )
             } catch (e: HasLandedException) {
                 // Do nothing
             } catch (e: Exception) {
                 logger.warn("Failed to create arrival event from ${arrival.callsign}: ${e.message}")
                 nonSequencedEvents.add(
-                    makeNonSequencedEvent(arrival, NonSequencedReason.UNKNOWN_ERROR)
+                    makeNonSequencedEvent(updatedArrival, NonSequencedReason.UNKNOWN_ERROR)
                 )
             }
         }
