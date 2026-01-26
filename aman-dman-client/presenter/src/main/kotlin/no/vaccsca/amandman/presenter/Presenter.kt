@@ -396,7 +396,8 @@ class Presenter(
     override fun beginRunwaySelection(runwayEvent: RunwayEvent, onClose: (runway: String?) -> Unit) {
         if (runwayEvent is RunwayArrivalEvent) {
             val imTheTrackingController = controllerInfo?.callsign != null && runwayEvent.trackingController == controllerInfo?.positionId
-            if (imTheTrackingController) {
+            val imTheMaster = myMasterRoles.contains(runwayEvent.airportIcao)
+            if (imTheTrackingController || imTheMaster) {
                 view.openSelectRunwayDialog(runwayEvent, availableRunways, onClose)
             } else {
                 onClose(null)
