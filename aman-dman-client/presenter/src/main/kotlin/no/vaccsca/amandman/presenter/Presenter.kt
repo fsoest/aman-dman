@@ -509,6 +509,7 @@ class Presenter(
                     airportIcao = timelineGroup.airport.icao,
                     masterSlaveSharedState = sharedState,
                     dataUpdateListener = guiUpdater,
+                    atcClient = euroScopeClient,
                 )
             }
             UserRole.LOCAL ->

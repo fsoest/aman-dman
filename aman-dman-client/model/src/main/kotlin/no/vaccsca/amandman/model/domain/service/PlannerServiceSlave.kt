@@ -6,12 +6,16 @@ import no.vaccsca.amandman.model.data.integration.MasterSlaveSharedState
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.data.integration.AtcClient
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import org.slf4j.LoggerFactory
 
 class PlannerServiceSlave(
     airportIcao: String,
     private val masterSlaveSharedState: MasterSlaveSharedState,
-    private val dataUpdateListener: DataUpdateListener
+    private val dataUpdateListener: DataUpdateListener,
+    private val atcClient: AtcClient,
 ) : PlannerService(airportIcao) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -20,6 +24,9 @@ class PlannerServiceSlave(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, exception ->
         logger.error("Unhandled exception in coroutine", exception)
     })
+
+    private var controllerInfo: ControllerInfoData? = null
+    private val lastSyncedRunway = mutableMapOf<String, String>()
 
     override fun start() {
         scope.launch {
@@ -45,11 +52,32 @@ class PlannerServiceSlave(
         }
     }
 
+    private fun syncRunwaysToEuroscope(events: List<TimelineEvent>) {
+        // If we don't know who we are yet, we can't determine "my" aircraft
+        val myPositionId = controllerInfo?.positionId ?: return
+        events.filterIsInstance<RunwayArrivalEvent>().forEach { event ->
+            if (event.trackingController == myPositionId) {
+                val plannedRunway = event.runway
+                val callsign = event.callsign
+
+                if (plannedRunway.isNotEmpty()) {
+                    if (lastSyncedRunway[callsign] != plannedRunway) {
+
+                        logger.info("Syncing runway $plannedRunway for $callsign to EuroScope")
+                        atcClient.assignRunway(callsign, plannedRunway)
+                        lastSyncedRunway[callsign] = plannedRunway
+                    }
+                }
+            }
+        }
+    }
+
     private fun fetchAmanData(airportIcao: String) {
         logger.info("Fetching shared AMAN data for $airportIcao")
         try {
             val data = masterSlaveSharedState.getTimelineEvents(airportIcao)
             dataUpdateListener.onTimelineEventsUpdated(airportIcao, data)
+            syncRunwaysToEuroscope(data)
         } catch (e: Exception) {
             logger.error("Failed to fetch timeline events for $airportIcao: ${e.message}")
         }
