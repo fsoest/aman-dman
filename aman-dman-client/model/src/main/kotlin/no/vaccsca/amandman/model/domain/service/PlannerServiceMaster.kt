@@ -207,6 +207,9 @@ class PlannerServiceMaster(
         val runwayArrivalEvents = mutableListOf<RunwayArrivalEvent>()
         val nonSequencedEvents = mutableListOf<NonSequencedEvent>()
         arrivals.forEach { arrival ->
+            // Clean overrides map
+            val activeCallsigns = arrivals.map { it.callsign }.toSet()
+            plannerState.runwayOverrides.keys.retainAll(activeCallsigns)
             val runway = plannerState.runwayOverrides[arrival.callsign] ?: arrival.assignedRunway
             val updatedArrival = arrival.copy(
                 assignedRunway = runway ?: arrival.assignedRunway,
