@@ -53,6 +53,7 @@ class PlannerServiceMaster(
     private data class PlannerState(
         var arrivalsCache: List<RunwayArrivalEvent> = emptyList(),
         var departuresCache: List<DepartureEvent> = emptyList(),
+        val runwayOverrides: MutableMap<String, String> = mutableMapOf(),
         var sequence: Sequence = Sequence(emptyList()),
         var minimumSpacingNm: Double = 3.0,
         var availableRunways: List<String>? = null,
@@ -137,6 +138,7 @@ class PlannerServiceMaster(
             logger.info("Manual Runway Update: $callsign -> $newRunway")
             // Assign runway in atc client
             atcClient.assignRunway(callsign, newRunway)
+            plannerState.runwayOverrides[callsign] = newRunway
             this.reSchedule(callsign)
         }
     }
@@ -171,7 +173,7 @@ class PlannerServiceMaster(
                     preferredTime = it.estimatedTime,
                     landingIas = it.landingIas,
                     wakeCategory = it.wakeCategory,
-                    assignedRunway = it.runway
+                    assignedRunway = plannerState.runwayOverrides[it.callsign] ?: it.runway
                 )
             }
 
