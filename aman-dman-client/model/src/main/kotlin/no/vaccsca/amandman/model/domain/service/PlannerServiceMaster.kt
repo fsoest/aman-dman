@@ -132,6 +132,15 @@ class PlannerServiceMaster(
         }
     }
 
+    override fun updateRunway(callsign: String, newRunway: String): Result<Unit> {
+        return runCatching {
+            logger.info("Manual Runway Update: $callsign -> $newRunway")
+            // Assign runway in atc client
+            atcClient.assignRunway(callsign, newRunway)
+            this.reSchedule(callsign)
+        }
+    }
+
     override fun startDataCollection() {
         atcClient.collectDataFor(airportIcao,
             onArrivalsReceived = { arrivals ->

@@ -158,6 +158,11 @@ class PlannerServiceSlave(
             throw UnsupportedInSlaveModeException("Descent profile cannot be viewed in slave mode")
         }
 
+    override fun updateRunway(callsign: String, newRunway: String): Result<Unit> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Runway cannot be updated in slave mode")
+        }
+
     override fun stop() {
         scope.cancel()
     }

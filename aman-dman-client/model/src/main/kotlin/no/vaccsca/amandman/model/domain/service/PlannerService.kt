@@ -19,4 +19,5 @@ abstract class PlannerService(
     abstract fun start()
     abstract fun getAvailableRunways(): Result<List<String>>
     abstract fun setShowDepartures(showDepartures: Boolean)
+    abstract fun updateRunway(callsign: String, newRunway: String): Result<Unit>
 }
