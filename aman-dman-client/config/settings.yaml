@@ -41,6 +41,27 @@ timelines:
       arrivalLabelLayoutId: osloArr
       right:
         runways: ["17", "35"]
+  EDDF:
+    - timelineTitle: "07"
+      arrivalLabelLayoutId: osloArr
+      left:
+        runways: ["07L"]
+      right:
+        runways: ["07C", "07R"]
+    - timelineTitle: "07u"
+      arrivalLabelLayoutId: osloArr
+      right:
+        runways: ["07"]
+    - timelineTitle: "25"
+      arrivalLabelLayoutId: osloArr
+      left:
+        runways: ["25R"]
+      right:
+        runways: ["25L", "25C"]
+    - timelineTitle: "25u"
+      arrivalLabelLayoutId: osloArr
+      right:
+        runways: ["25"]
 
 arrivalLabelLayouts:
   osloArr:
