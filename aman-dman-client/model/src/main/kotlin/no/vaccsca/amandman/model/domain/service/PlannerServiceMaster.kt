@@ -53,6 +53,7 @@ class PlannerServiceMaster(
     private data class PlannerState(
         var arrivalsCache: List<RunwayArrivalEvent> = emptyList(),
         var departuresCache: List<DepartureEvent> = emptyList(),
+        val runwayOverrides: MutableMap<String, String> = mutableMapOf(),
         var sequence: Sequence = Sequence(emptyList()),
         var minimumSpacingNm: Double = 3.0,
         var availableRunways: List<String>? = null,
@@ -132,6 +133,14 @@ class PlannerServiceMaster(
         }
     }
 
+    override fun updateRunway(callsign: String, newRunway: String): Result<Unit> {
+        return runCatching {
+            atcClient.assignRunway(callsign, newRunway)
+            plannerState.runwayOverrides[callsign] = newRunway
+            this.reSchedule(callsign)
+        }
+    }
+
     override fun startDataCollection() {
         atcClient.collectDataFor(airportIcao,
             onArrivalsReceived = { arrivals ->
@@ -162,7 +171,7 @@ class PlannerServiceMaster(
                     preferredTime = it.estimatedTime,
                     landingIas = it.landingIas,
                     wakeCategory = it.wakeCategory,
-                    assignedRunway = it.runway
+                    assignedRunway = plannerState.runwayOverrides[it.callsign] ?: it.runway
                 )
             }
 
@@ -196,9 +205,22 @@ class PlannerServiceMaster(
         val runwayArrivalEvents = mutableListOf<RunwayArrivalEvent>()
         val nonSequencedEvents = mutableListOf<NonSequencedEvent>()
 
+        // Clean overrides map
+        val activeCallsigns = arrivals.map { it.callsign }.toSet()
+        plannerState.runwayOverrides.keys.retainAll(activeCallsigns)
         arrivals.forEach { arrival ->
+            // If the override runway is the same as Euroscope's runway, delete the override to prevent locking.
+            val runway = plannerState.runwayOverrides[arrival.callsign]
+            if (runway != null) {
+                if (runway == arrival.assignedRunway) {
+                    plannerState.runwayOverrides.remove(arrival.callsign)
+                }
+            }
+            val updatedArrival = arrival.copy(
+                assignedRunway = runway ?: arrival.assignedRunway,
+            )
             try {
-                val arrivalEvent = ArrivalEventService.createRunwayArrivalEvent(airport, arrival, plannerState.weatherData)
+                val arrivalEvent = ArrivalEventService.createRunwayArrivalEvent(airport, updatedArrival, plannerState.weatherData)
                 runwayArrivalEvents.add(arrivalEvent)
             } catch (e: NoAssignedRunwayException) {
                 nonSequencedEvents.add(
@@ -206,18 +228,18 @@ class PlannerServiceMaster(
                 )
             } catch (e: UnknownAircraftTypeException) {
                 nonSequencedEvents.add(
-                    makeNonSequencedEvent(arrival, NonSequencedReason.MISSING_PERFORMANCE_DATA)
+                    makeNonSequencedEvent(updatedArrival, NonSequencedReason.MISSING_PERFORMANCE_DATA)
                 )
             } catch (e: ReachedEndOfRouteException) {
                 nonSequencedEvents.add(
-                    makeNonSequencedEvent(arrival, NonSequencedReason.EMPTY_ROUTE)
+                    makeNonSequencedEvent(updatedArrival, NonSequencedReason.EMPTY_ROUTE)
                 )
             } catch (e: HasLandedException) {
                 // Do nothing
             } catch (e: Exception) {
                 logger.warn("Failed to create arrival event from ${arrival.callsign}: ${e.message}")
                 nonSequencedEvents.add(
-                    makeNonSequencedEvent(arrival, NonSequencedReason.UNKNOWN_ERROR)
+                    makeNonSequencedEvent(updatedArrival, NonSequencedReason.UNKNOWN_ERROR)
                 )
             }
         }

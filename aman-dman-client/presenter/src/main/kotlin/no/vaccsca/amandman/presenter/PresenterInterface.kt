@@ -30,6 +30,7 @@ interface PresenterInterface {
     fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double)
     fun beginRunwaySelection(runwayEvent: RunwayEvent, onClose: (runway: String?) -> Unit)
     fun onToggleShowDepartures(airportIcao: String, selected: Boolean)
+    fun onSelectRunwayClicked(airportIcao: String, callsign: String, newRunway: String)
     
     // Tab context menu actions
     fun onTabMenu(airportIcao: String, screenPos: Point)
