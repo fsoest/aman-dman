@@ -36,8 +36,6 @@ class PlannerServiceSlave(
                     controllerInfo = it
                 }
             )
-            logger.info("Position id: ${controllerInfo?.positionId}")
-            logger.info("Callsign: ${controllerInfo?.callsign}")
 
             while (isActive) {
                 fetchAll()
@@ -59,6 +57,11 @@ class PlannerServiceSlave(
         for (airport in arrivalAirportsToFetch) {
             fetchAmanData(airport)
         }
+    }
+
+    fun updateControllerInfo(info: ControllerInfoData) {
+        this.controllerInfo = info
+        logger.info("Controller callsign: ${this.controllerInfo?.callsign}")
     }
 
     private fun syncRunwaysToEuroscope(events: List<TimelineEvent>) {

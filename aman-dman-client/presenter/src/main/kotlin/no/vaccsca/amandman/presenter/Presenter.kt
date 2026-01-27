@@ -509,12 +509,15 @@ class Presenter(
                     return
                 }
 
-                PlannerServiceSlave(
+                val slave = PlannerServiceSlave(
                     airportIcao = timelineGroup.airport.icao,
                     masterSlaveSharedState = sharedState,
                     dataUpdateListener = guiUpdater,
                     atcClient = euroScopeClient,
                 )
+
+                controllerInfo?.let { slave.updateControllerInfo(it) }
+                slave
             }
             UserRole.LOCAL ->
                 PlannerServiceMaster(
@@ -570,6 +573,12 @@ class Presenter(
     private fun handleControllerInfoUpdate(info: ControllerInfoData) {
         controllerInfo = info
         view.updateControllerInfo(info)
+
+        plannerManager.getAllServices().forEach { service ->
+            if (service is PlannerServiceSlave) {
+                service.updateControllerInfo(info)
+            }
+        }
     }
 
     private data class CachedTimelineEvent(
