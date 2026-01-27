@@ -71,6 +71,12 @@ airports:
           longitude: 8.534174
         elevation: 327
         trueHeading: 70
+      07:
+        location:
+          latitude: 50.027542
+          longitude: 8.534174
+        elevation: 327
+        trueHeading: 70
       25L:
         location:
           latitude: 50.040052
@@ -89,8 +95,16 @@ airports:
           longitude: 8.533716
         elevation: 351
         trueHeading: 250
+      25:
+        location:
+          latitude: 50.045825
+          longitude: 8.533716
+        elevation: 351
+        trueHeading: 250
     independentRunwaySystems:
       - ["07L"]
       - ["07C", "07R"]
+      - ["07"]
       - ["25R"]
       - ["25C", "25L"]
+      - ["25]
