@@ -89,3 +89,8 @@ airports:
           longitude: 8.533716
         elevation: 351
         trueHeading: 250
+    independentRunwaySystems:
+      - ["07L"]
+      - ["07C", "07R"]
+      - ["25R"]
+      - ["25C", "25L"]
