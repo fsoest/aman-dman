@@ -30,6 +30,13 @@ class PlannerServiceSlave(
 
     override fun start() {
         scope.launch {
+
+            atcClient.start(
+                onControllerInfoData = {
+                    controllerInfo = it
+                }
+            )
+
             while (isActive) {
                 fetchAll()
                 delay(1000)
