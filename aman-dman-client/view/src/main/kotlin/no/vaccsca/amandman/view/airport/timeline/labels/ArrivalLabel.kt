@@ -101,7 +101,7 @@ class ArrivalLabel(
         val popup = AmanPopupMenu("Flight Options") {
             item("Select Runway", action = {
                 presenterInterface.beginRunwaySelection(arrivalEvent) { newRunway ->
-                    if (newRunway != null && newRunway != arrivalEvent.runway) {
+                    if (newRunway != null) {
                         presenterInterface.onSelectRunwayClicked(
                             arrivalEvent.airportIcao,
                             arrivalEvent.callsign,

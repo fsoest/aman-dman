@@ -61,11 +61,11 @@ class PlannerServiceSlave(
 
     fun updateControllerInfo(info: ControllerInfoData) {
         this.controllerInfo = info
-        logger.info("Controller callsign: ${this.controllerInfo?.callsign}")
     }
 
     private fun syncRunwaysToEuroscope(events: List<TimelineEvent>) {
-        val myPositionId = controllerInfo?.positionId ?: return
+        val myPositionId = controllerInfo?.positionId
+
         events.filterIsInstance<RunwayArrivalEvent>().forEach { event ->
             if (event.trackingController == myPositionId) {
                 val plannedRunway = event.runway
@@ -73,7 +73,6 @@ class PlannerServiceSlave(
 
                 if (plannedRunway.isNotEmpty()) {
                     if (lastSyncedRunway[callsign] != plannedRunway) {
-
                         logger.info("Syncing runway $plannedRunway for $callsign to EuroScope")
                         atcClient.assignRunway(callsign, plannedRunway)
                         lastSyncedRunway[callsign] = plannedRunway

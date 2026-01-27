@@ -135,11 +135,8 @@ class PlannerServiceMaster(
 
     override fun updateRunway(callsign: String, newRunway: String): Result<Unit> {
         return runCatching {
-            logger.info("Manual Runway Update: $callsign -> $newRunway")
-            // Assign runway in atc client
             atcClient.assignRunway(callsign, newRunway)
             plannerState.runwayOverrides[callsign] = newRunway
-            logger.info("Overrides: ${plannerState.runwayOverrides}")
             this.reSchedule(callsign)
         }
     }
@@ -211,7 +208,6 @@ class PlannerServiceMaster(
         // Clean overrides map
         val activeCallsigns = arrivals.map { it.callsign }.toSet()
         plannerState.runwayOverrides.keys.retainAll(activeCallsigns)
-        logger.info("Overrides: ${plannerState.runwayOverrides}")
         arrivals.forEach { arrival ->
             // If the override runway is the same as Euroscope's runway, delete the override to prevent locking.
             val runway = plannerState.runwayOverrides[arrival.callsign]
