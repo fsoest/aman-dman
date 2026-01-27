@@ -36,6 +36,8 @@ class PlannerServiceSlave(
                     controllerInfo = it
                 }
             )
+            logger.info("Position id: ${controllerInfo?.positionId}")
+            logger.info("Callsign: ${controllerInfo?.callsign}")
 
             while (isActive) {
                 fetchAll()
