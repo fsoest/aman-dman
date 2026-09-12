@@ -42,6 +42,10 @@ class AirportPresenter(
     private val uiDispatcher: UiDispatcher,
 ) : AirportPresenterInterface, DataUpdateListener {
 
+    companion object {
+        private const val DEFAULT_MINIMUM_SPACING_NM = 3.0
+    }
+
     private val logger = LoggerFactory.getLogger(javaClass)
 
     private val sequencePlanner: SequencePlanner? = dataSource as? SequencePlanner
@@ -50,7 +54,7 @@ class AirportPresenter(
     private val cachedTimelineEvents = mutableMapOf<String, CachedTimelineEvent>()
     private var cachedNonSequencedEvents: List<NonSequencedEvent> = emptyList()
     private val runwayModeStateManager = AirportRunwayModeStateManager(airportIcao, view)
-    private var minimumSpacingNm: Double = 3.0
+    private var minimumSpacingNmByRunway: Map<String, Double> = emptyMap()
     private var availableRunways = setOf<String>()
     private var feederFixState: FeederFixState = FeederFixState()
     private val savedTimelineConfigs = mutableListOf<TimelineConfig>()
@@ -116,16 +120,16 @@ class AirportPresenter(
         if (airportIcao != this.airportIcao) return
         runOnEdt {
             availableRunways = runwayStatuses.keys
-            runwayModeStateManager.updateRunwayStatuses(runwayStatuses, minimumSpacingNm)
+            runwayModeStateManager.updateRunwayStatuses(runwayStatuses, minimumSpacingNmByRunway)
         }
     }
 
-    override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
+    override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNmByRunway: Map<String, Double>) {
         if (airportIcao != this.airportIcao) return
         runOnEdt {
-            this.minimumSpacingNm = minimumSpacingNm
-            runwayModeStateManager.updateMinimumSpacing(minimumSpacingNm)
-            view.updateMinimumSpacing(minimumSpacingNm)
+            this.minimumSpacingNmByRunway = minimumSpacingNmByRunway
+            runwayModeStateManager.updateMinimumSpacing(minimumSpacingNmByRunway)
+            view.updateMinimumSpacing(minimumSpacingNmByRunway)
         }
     }
 
@@ -174,17 +178,17 @@ class AirportPresenter(
             ?: showReadOnlyMessage()
     }
 
-    override fun onMinimumSpacingDistanceSet(minimumSpacingDistanceNm: Double) {
-        sequencePlanner?.setMinimumSpacing(minimumSpacingDistanceNm)
+    override fun onMinimumSpacingDistanceSet(runway: String, minimumSpacingDistanceNm: Double) {
+        sequencePlanner?.setMinimumSpacing(runway, minimumSpacingDistanceNm)
             ?: showReadOnlyMessage()
     }
 
-    override fun onSetMinSpacingSelectionClicked(minSpacingSelectionNm: Double?) {
+    override fun onSetMinSpacingSelectionClicked() {
         if (isReadOnly) {
             showReadOnlyMessage()
             return
         }
-        view.showMinimumSpacingDialog(minSpacingSelectionNm ?: minimumSpacingNm)
+        view.showMinimumSpacingDialog(getKnownRunways().sorted(), minimumSpacingNmByRunway, DEFAULT_MINIMUM_SPACING_NM)
     }
 
     override fun onOpenMetWindowClicked() {

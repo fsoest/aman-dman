@@ -11,7 +11,7 @@ import no.vaccsca.amandman.model.timeline.event.timeline.TimelineEvent
 interface SequencePlanner : AirportDataSource {
     override val isReadOnly: Boolean get() = false
 
-    fun setMinimumSpacing(minimumSpacingDistanceNm: Double)
+    fun setMinimumSpacing(runway: String, minimumSpacingDistanceNm: Double)
     fun refreshWeatherData()
     fun refreshCdmData()
     fun highlightActiveAreasOnRadarScreen()

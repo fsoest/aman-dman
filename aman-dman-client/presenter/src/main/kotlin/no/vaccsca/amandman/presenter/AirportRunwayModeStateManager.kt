@@ -13,16 +13,16 @@ class AirportRunwayModeStateManager(
 
     private var currentState: RunwayModeState? = null
 
-    fun updateRunwayStatuses(runwayStatuses: Map<String, RunwayStatus>, minimumSpacingNm: Double) {
+    fun updateRunwayStatuses(runwayStatuses: Map<String, RunwayStatus>, minimumSpacingNmByRunway: Map<String, Double>) {
         val possibleRunwayModes = inferPossibleRunwayModes(runwayStatuses)
-        val newState = RunwayModeState(airportIcao, runwayStatuses, minimumSpacingNm, possibleRunwayModes)
+        val newState = RunwayModeState(airportIcao, runwayStatuses, minimumSpacingNmByRunway, possibleRunwayModes)
         currentState = newState
         updateView(newState)
     }
 
-    fun updateMinimumSpacing(minimumSpacingNm: Double) {
+    fun updateMinimumSpacing(minimumSpacingNmByRunway: Map<String, Double>) {
         currentState?.let { state ->
-            val updatedState = state.copy(minimumSpacingNm = minimumSpacingNm)
+            val updatedState = state.copy(minimumSpacingNmByRunway = minimumSpacingNmByRunway)
             currentState = updatedState
             updateView(updatedState)
         }

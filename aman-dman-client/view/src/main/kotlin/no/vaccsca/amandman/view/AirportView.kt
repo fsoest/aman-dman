@@ -57,7 +57,10 @@ class AirportView(
 
     private var minimumSpacingFrame: JInternalFrame? = null
     private val minimumSpacingModel = SpinnerNumberModel(3.0, 0.0, 100.0, 0.1)
-    private var onMinimumSpacingSubmit: ((Double) -> Unit)? = null
+    private val minimumSpacingRunwayModel = DefaultComboBoxModel<String>()
+    private var onMinimumSpacingSubmit: ((runway: String, value: Double) -> Unit)? = null
+    private var minimumSpacingByRunway: Map<String, Double> = emptyMap()
+    private var minimumSpacingDefault: Double = 3.0
 
     private var currentTime: Instant? = null
 
@@ -192,12 +195,33 @@ class AirportView(
         windFrame?.toFront()
     }
 
-    fun openMinimumSpacingWindow(default: Double, onSubmit: (Double) -> Unit) {
+    fun openMinimumSpacingWindow(
+        runways: List<String>,
+        valuesByRunway: Map<String, Double>,
+        defaultValue: Double,
+        onSubmit: (runway: String, value: Double) -> Unit,
+    ) {
         onMinimumSpacingSubmit = onSubmit
-        minimumSpacingModel.value = default
+        minimumSpacingByRunway = valuesByRunway
+        minimumSpacingDefault = defaultValue
+
+        minimumSpacingRunwayModel.removeAllElements()
+        runways.forEach { minimumSpacingRunwayModel.addElement(it) }
+        val selectedRunway = runways.firstOrNull()
+        minimumSpacingRunwayModel.selectedItem = selectedRunway
+        minimumSpacingModel.value = selectedRunway?.let { valuesByRunway[it] } ?: defaultValue
+
         if (minimumSpacingFrame == null) {
+            val runwayCombo = JComboBox(minimumSpacingRunwayModel).apply {
+                addActionListener {
+                    val runway = selectedItem as? String
+                    minimumSpacingModel.value = runway?.let { minimumSpacingByRunway[it] } ?: minimumSpacingDefault
+                }
+            }
             val spinner = JSpinner(minimumSpacingModel)
             val content = JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+                add(JLabel("Runway:"))
+                add(runwayCombo)
                 add(JLabel("Minimum Spacing:"))
                 add(spinner)
                 add(JLabel("NM"))
@@ -205,7 +229,10 @@ class AirportView(
             val buttonBar = JPanel(FlowLayout(FlowLayout.RIGHT)).apply {
                 add(JButton("Apply").apply {
                     addActionListener {
-                        onMinimumSpacingSubmit?.invoke(minimumSpacingModel.number.toDouble())
+                        val runway = minimumSpacingRunwayModel.selectedItem as? String
+                        if (runway != null) {
+                            onMinimumSpacingSubmit?.invoke(runway, minimumSpacingModel.number.toDouble())
+                        }
                         minimumSpacingFrame?.isVisible = false
                     }
                 })
@@ -220,7 +247,7 @@ class AirportView(
                 layout = BorderLayout()
                 add(content, BorderLayout.CENTER)
                 add(buttonBar, BorderLayout.SOUTH)
-                setSize(320, 120)
+                setSize(400, 120)
                 setLocation(200, 120)
                 isVisible = true
                 isIconifiable = false

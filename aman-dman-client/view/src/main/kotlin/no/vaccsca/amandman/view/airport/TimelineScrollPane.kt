@@ -32,7 +32,6 @@ class TimelineScrollPane(
 ) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 
     private val presenter: AirportPresenterInterface get() = presenterProvider()
-    private var minSpacingSelectionNm: Double? = null
     private var latestRunwayEvents: List<RunwayEvent> = emptyList()
     private var latestFeederFixState: FeederFixState = FeederFixState()
 
@@ -44,10 +43,6 @@ class TimelineScrollPane(
         gbc.anchor = GridBagConstraints.WEST
         gbc.fill = GridBagConstraints.VERTICAL
         viewport.add(items)
-
-        airportViewState.minimumSpacingNm.addListener { newValue ->
-            minSpacingSelectionNm = newValue
-        }
 
         airportViewState.events.addListener { newValue ->
             latestRunwayEvents = newValue.filterIsInstance<RunwayEvent>()
@@ -263,7 +258,7 @@ class TimelineScrollPane(
             }
 
             item("Final approach spacing", action = {
-                presenter.onSetMinSpacingSelectionClicked(minSpacingSelectionNm)
+                presenter.onSetMinSpacingSelectionClicked()
             })
 
             item("Show winds", action = {
