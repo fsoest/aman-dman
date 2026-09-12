@@ -805,7 +805,7 @@ class AirportPresenterTimelineFormTest {
         override fun updateWeatherData(weather: VerticalWeatherProfile?) {}
         override fun updateIntegrationStatuses(statuses: Map<IntegrationKind, IntegrationDisplayStatus>) {}
         override fun updateRunwayModes(runwayModes: List<Pair<String, Boolean>>) {}
-        override fun updateMinimumSpacing(minimumSpacingNm: Double) {}
+        override fun updateMinimumSpacing(minimumSpacingNmByRunway: Map<String, Double>) {}
         override fun updateDraggedLabel(timelineEvent: TimelineEvent, newInstant: Instant, isAvailable: Boolean) {}
         override fun updateFeederFixState(feederFixState: FeederFixState) {}
         override fun showAirportContextMenu(
@@ -820,7 +820,7 @@ class AirportPresenterTimelineFormTest {
         override fun openMetWindow() {}
         override fun openLandingRatesWindow() {}
         override fun openNonSequencedWindow() {}
-        override fun showMinimumSpacingDialog(default: Double) {}
+        override fun showMinimumSpacingDialog(runways: List<String>, valuesByRunway: Map<String, Double>, defaultValue: Double) {}
         override fun openSelectRunwayDialog(
             runwayEvent: RunwayEvent,
             runwayOptions: Set<String>,

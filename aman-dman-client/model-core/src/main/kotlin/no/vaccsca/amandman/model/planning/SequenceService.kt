@@ -5,11 +5,16 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 data class SequencingOptions(
-    val minimumSeparationNm: Double,
+    val minimumSeparationNmByRunway: Map<String, Double>,
     val sequencingHorizon: Duration,
 )
 
 object SequenceService {
+
+    private const val DEFAULT_MINIMUM_SEPARATION_NM = 3.0
+
+    private fun minimumSeparationNmFor(minimumSeparationNmByRunway: Map<String, Double>, runway: String?): Double =
+        runway?.let { minimumSeparationNmByRunway[it] } ?: DEFAULT_MINIMUM_SEPARATION_NM
 
     /**
      * Clears the current sequence, forcing a full rescheduling of all aircraft.
@@ -28,7 +33,7 @@ object SequenceService {
         currentSequence: List<SequencePlace>,
         callsign: String,
         suggestion: Instant,
-        minimumSeparationNm: Double
+        minimumSeparationNmByRunway: Map<String, Double>
     ): List<SequencePlace> {
         val oldIdx = currentSequence.indexOfFirst { it.item.id == callsign }
         if (oldIdx == -1) return currentSequence // Not found
@@ -44,23 +49,23 @@ object SequenceService {
         val newTime = if (prev == null) {
             suggestion
         } else {
-            maxOf(suggestion, safeLandingTimeAfter(prev, oldPlace, minimumSeparationNm))
+            maxOf(suggestion, safeLandingTimeAfter(prev, oldPlace, minimumSeparationNmByRunway))
         }
 
         // Insert the moved aircraft at the new index, marked as manually assigned
         updatedPlaces.add(insertIdx, oldPlace.copy(scheduledTime = newTime, isManuallyAssigned = true))
-        updatedPlaces.moveFollowersToSafeTimesAfter(insertIdx, minimumSeparationNm)
+        updatedPlaces.moveFollowersToSafeTimesAfter(insertIdx, minimumSeparationNmByRunway)
 
         return updatedPlaces
     }
 
     private fun MutableList<SequencePlace>.moveFollowersToSafeTimesAfter(
         leaderIndex: Int,
-        minimumSeparationNm: Double,
+        minimumSeparationNmByRunway: Map<String, Double>,
     ) {
         for (i in (leaderIndex + 1) until size) {
             val follower = this[i]
-            val safeTime = safeLandingTimeAfter(this[i - 1], follower, minimumSeparationNm)
+            val safeTime = safeLandingTimeAfter(this[i - 1], follower, minimumSeparationNmByRunway)
 
             if (follower.scheduledTime < safeTime) {
                 val scheduledTime = if (follower.isManuallyAssigned) {
@@ -91,14 +96,14 @@ object SequenceService {
      * @param currentSequence The current sequence of aircraft.
      * @param timelineEvent The timeline event representing the aircraft to check.
      * @param requestedTime The requested scheduled time for the aircraft.
-     * @param minimumSeparationNm The minimum separation to use for different runways.
+     * @param minimumSeparationNmByRunway The minimum separation target configured per runway.
      * @return True if the time slot is available, false otherwise.
      */
     fun isTimeSlotAvailable(
         currentSequence: List<SequencePlace>,
         candidate: SequenceCandidate,
         requestedTime: Instant,
-        minimumSeparationNm: Double
+        minimumSeparationNmByRunway: Map<String, Double>
     ): Boolean {
 
         val closestLeader = currentSequence
@@ -120,7 +125,7 @@ object SequenceService {
             referenceTime = closestLeader.scheduledTime,
             leader = closestLeader.item as AircraftSequenceCandidate,
             follower = candidate as AircraftSequenceCandidate,
-            minimumSeparationNm = minimumSeparationNm
+            minimumSeparationNmByRunway = minimumSeparationNmByRunway
         )
 
         return requestedTime >= safeLandingTime
@@ -135,8 +140,8 @@ object SequenceService {
             .sortedWith(sequenceEntryComparator())
 
         return entries
-            .moveEntriesBehindFrozenSlotsTheyCannotPrecede(config.minimumSeparationNm)
-            .scheduleWithSpacing(config.minimumSeparationNm)
+            .moveEntriesBehindFrozenSlotsTheyCannotPrecede(config.minimumSeparationNmByRunway)
+            .scheduleWithSpacing(config.minimumSeparationNmByRunway)
     }
 
     private data class SequenceEntry(
@@ -196,7 +201,7 @@ object SequenceService {
             .thenBy { it.candidate.id }
 
     private fun List<SequenceEntry>.moveEntriesBehindFrozenSlotsTheyCannotPrecede(
-        minimumSeparationNm: Double,
+        minimumSeparationNmByRunway: Map<String, Double>,
     ): List<SequenceEntry> {
         val orderedEntries = toMutableList()
         var index = 0
@@ -206,7 +211,7 @@ object SequenceService {
             val frozenSlotIndex = ((index + 1) until orderedEntries.size).lastOrNull { frozenIndex ->
                 val frozenEntry = orderedEntries[frozenIndex]
                 frozenEntry.candidate.isInFrozenSequenceWindow &&
-                    !entry.canRemainBeforeFrozenSlot(frozenEntry, minimumSeparationNm)
+                    !entry.canRemainBeforeFrozenSlot(frozenEntry, minimumSeparationNmByRunway)
             }
 
             if (frozenSlotIndex == null) {
@@ -222,7 +227,7 @@ object SequenceService {
 
     private fun SequenceEntry.canRemainBeforeFrozenSlot(
         frozenEntry: SequenceEntry,
-        minimumSeparationNm: Double,
+        minimumSeparationNmByRunway: Map<String, Double>,
     ): Boolean {
         if (candidate.isInFrozenSequenceWindow) {
             return canFrozenAircraftRemainBefore(frozenEntry)
@@ -234,7 +239,7 @@ object SequenceService {
             referenceTime = currentScheduledTime,
             leader = candidate,
             follower = frozenEntry.candidate,
-            minimumSeparationNm = minimumSeparationNm,
+            minimumSeparationNmByRunway = minimumSeparationNmByRunway,
         )
 
         return frozenSlotTime >= earliestFrozenTime
@@ -251,7 +256,7 @@ object SequenceService {
         }
     }
 
-    private fun List<SequenceEntry>.scheduleWithSpacing(minimumSeparationNm: Double): List<SequencePlace> {
+    private fun List<SequenceEntry>.scheduleWithSpacing(minimumSeparationNmByRunway: Map<String, Double>): List<SequencePlace> {
         val places = mutableListOf<SequencePlace>()
 
         for (entry in this) {
@@ -263,7 +268,7 @@ object SequenceService {
                     referenceTime = leader.scheduledTime,
                     leader = leader.item as AircraftSequenceCandidate,
                     follower = entry.candidate,
-                    minimumSeparationNm = minimumSeparationNm,
+                    minimumSeparationNmByRunway = minimumSeparationNmByRunway,
                 )
                 maxOf(entry.desiredTime, safeTime)
             }
@@ -283,30 +288,32 @@ object SequenceService {
     private fun safeLandingTimeAfter(
         leader: SequencePlace,
         follower: SequencePlace,
-        minimumSeparationNm: Double,
+        minimumSeparationNmByRunway: Map<String, Double>,
     ): Instant =
         calculateSafeLandingTime(
             referenceTime = leader.scheduledTime,
             leader = leader.item as AircraftSequenceCandidate,
             follower = follower.item as AircraftSequenceCandidate,
-            minimumSeparationNm = minimumSeparationNm,
+            minimumSeparationNmByRunway = minimumSeparationNmByRunway,
         )
 
     /**
      * Calculates the final scheduled time for an aircraft based on runway assignment and wake turbulence category.
-     * Uses minimum separation for different runways, wake category spacing for same runway.
+     * Uses the target minimum separation configured for the follower's runway for different-runway pairs,
+     * and as a floor beneath wake category spacing for same-runway pairs (wake category always wins if larger).
      *
      * @param referenceTime The scheduled time of the preceding aircraft in the sequence.
      * @param leader The preceding aircraft in the sequence.
      * @param follower The aircraft for which the final time is being calculated.
-     * @param minimumSeparationNm The minimum separation to use for different runways.
+     * @param minimumSeparationNmByRunway The minimum separation target configured per runway.
      */
     private fun calculateSafeLandingTime(
         referenceTime: Instant,
         leader: AircraftSequenceCandidate,
         follower: AircraftSequenceCandidate,
-        minimumSeparationNm: Double
+        minimumSeparationNmByRunway: Map<String, Double>
     ): Instant {
+        val minimumSeparationNm = minimumSeparationNmFor(minimumSeparationNmByRunway, follower.runway)
         val effectiveSpacingNm = if (areOnDifferentRunways(leader, follower)) {
             // Use minimum separation for aircraft on different runways
             minimumSeparationNm

@@ -51,6 +51,10 @@ class LocalSequencePlanner(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    companion object {
+        private const val DEFAULT_MINIMUM_SPACING_NM = 3.0
+    }
+
     private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, "Planner-$airportIcao") }
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, e ->
         logger.error("Unhandled exception in planner coroutine", e)
@@ -70,7 +74,7 @@ class LocalSequencePlanner(
     private var extractedRoutesByCallsign: Map<String, List<ExtractedRoutePoint>> = emptyMap()
     private var departuresCache: List<DepartureEvent> = emptyList()
     private var sequenceSystems: List<AmanSequenceSystem> = airport.independentRunwaySystems.map { AmanSequenceSystem(it, emptyList()) }
-    private var minimumSpacingNm: Double = 3.0
+    private var minimumSpacingNmByRunway: Map<String, Double> = airport.runways.keys.associateWith { DEFAULT_MINIMUM_SPACING_NM }
     private var availableRunways: List<String> = emptyList()
     private var weatherField: SpatialWeatherField? = null
     private var nonSequencedList: List<NonSequencedEvent> = emptyList()
@@ -103,7 +107,7 @@ class LocalSequencePlanner(
 
     override fun start() {
         scope.launch {
-            dataUpdateListeners.forEach { it.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm) }
+            dataUpdateListeners.forEach { it.onMinimumSpacingUpdated(airportIcao, minimumSpacingNmByRunway) }
             publishFeederFixState(arrivalsCache)
         }
         atcClient.start { controllerInfo = it }
@@ -250,7 +254,7 @@ class LocalSequencePlanner(
                     currentSequence = cleanedSequence,
                     candidates = sequenceItems.filter { it.runway in sequence.runwaySystem },
                     config = SequencingOptions(
-                        minimumSeparationNm = minimumSpacingNm,
+                        minimumSeparationNmByRunway = minimumSpacingNmByRunway,
                         sequencingHorizon = airport.sequencingHorizon,
                     )
                 )
@@ -337,12 +341,12 @@ class LocalSequencePlanner(
             }
         }
 
-    override fun setMinimumSpacing(minimumSpacingDistanceNm: Double) {
+    override fun setMinimumSpacing(runway: String, minimumSpacingDistanceNm: Double) {
         scope.launch {
-            minimumSpacingNm = minimumSpacingDistanceNm
+            minimumSpacingNmByRunway = minimumSpacingNmByRunway + (runway to minimumSpacingDistanceNm)
             sequenceSystems = sequenceSystems.map { it.copy(places = emptyList()) }
             rebuildArrivalsFromLatestDataOrNotify()
-            dataUpdateListeners.forEach { it.onMinimumSpacingUpdated(airportIcao, minimumSpacingDistanceNm) }
+            dataUpdateListeners.forEach { it.onMinimumSpacingUpdated(airportIcao, minimumSpacingNmByRunway) }
         }
     }
 
@@ -413,7 +417,7 @@ class LocalSequencePlanner(
                 }
                 if (sequence.checkTimeSlotAvailable(timelineEvent, scheduledTime, newRunway)) {
                     val updatedPlaces = SequenceService.suggestScheduledTime(
-                        sequence.places, timelineEvent.callsign, scheduledTime, minimumSpacingNm
+                        sequence.places, timelineEvent.callsign, scheduledTime, minimumSpacingNmByRunway
                     )
                     if (newRunway != null) {
                         atcClient.assignRunway(timelineEvent.callsign, newRunway)
@@ -454,7 +458,7 @@ class LocalSequencePlanner(
             wakeCategory = timelineEvent.wakeCategory,
             runway = newRunway ?: timelineEvent.runway,
         )
-        return SequenceService.isTimeSlotAvailable(this.places, sequenceCandidate, scheduledTime, minimumSpacingNm)
+        return SequenceService.isTimeSlotAvailable(this.places, sequenceCandidate, scheduledTime, minimumSpacingNmByRunway)
     }
 
 

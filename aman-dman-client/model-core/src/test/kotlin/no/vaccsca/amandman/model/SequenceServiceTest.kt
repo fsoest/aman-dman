@@ -15,7 +15,7 @@ import kotlin.time.Duration.Companion.seconds
 class SequenceServiceTest {
 
     private val defaultConfig = SequencingOptions(
-        minimumSeparationNm = 3.0,
+        minimumSeparationNmByRunway = emptyMap(),
         sequencingHorizon = 30.minutes,
     )
 
@@ -167,7 +167,7 @@ class SequenceServiceTest {
 
         // Manually move FIRST to 1 minute before SECOND
         val updatedSequence = SequenceService.suggestScheduledTime(
-            initialSequence, "FIRST", sequencePlace2.scheduledTime - 1.minutes, 3.0
+            initialSequence, "FIRST", sequencePlace2.scheduledTime - 1.minutes, emptyMap()
         )
 
         val firstPlace = updatedSequence[0]
@@ -452,7 +452,7 @@ class SequenceServiceTest {
 
         // Manually move FIRST to a later time, creating potential conflict with SECOND
         val updatedSequence = SequenceService.suggestScheduledTime(
-            sequence, callsign = "FIRST", suggestion = aircraft2.preferredTime - 1.minutes, 3.0
+            sequence, callsign = "FIRST", suggestion = aircraft2.preferredTime - 1.minutes, emptyMap()
         )
 
         val firstPlace = updatedSequence[0]

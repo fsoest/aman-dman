@@ -20,8 +20,8 @@ interface AirportPresenterInterface {
     fun onLabelDragEnd(timelineEvent: TimelineEvent, newScheduledTime: Instant, newRunway: String? = null)
 
     fun onRecalculateSequenceClicked(callSign: String? = null)
-    fun onMinimumSpacingDistanceSet(minimumSpacingDistanceNm: Double)
-    fun onSetMinSpacingSelectionClicked(minSpacingSelectionNm: Double?)
+    fun onMinimumSpacingDistanceSet(runway: String, minimumSpacingDistanceNm: Double)
+    fun onSetMinSpacingSelectionClicked()
 
     fun onOpenMetWindowClicked()
     fun onOpenLandingRatesWindow()

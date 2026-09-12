@@ -14,8 +14,8 @@ interface MasterSlaveSharedState {
     fun sendRunwayStatuses(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>)
     fun sendWeatherData(airportIcao: String, weatherData: VerticalWeatherProfile?)
     fun getWeatherData(airportIcao: String): VerticalWeatherProfile?
-    fun getMinimumSpacing(airportIcao: String): Double
-    fun sendMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
+    fun getMinimumSpacing(airportIcao: String): Map<String, Double>
+    fun sendMinimumSpacing(airportIcao: String, minimumSpacingNmByRunway: Map<String, Double>)
     fun acquireMasterRole(airportIcao: String): Boolean
     fun hasMasterRoleStatus(airportIcao: String): Boolean
     fun releaseMasterRole(airportIcao: String)

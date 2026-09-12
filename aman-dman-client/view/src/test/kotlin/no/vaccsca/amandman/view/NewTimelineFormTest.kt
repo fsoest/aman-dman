@@ -352,8 +352,8 @@ class NewTimelineFormTest {
         override fun onLabelDrag(timelineEvent: TimelineEvent, newInstant: Instant) {}
         override fun onLabelDragEnd(timelineEvent: TimelineEvent, newScheduledTime: Instant, newRunway: String?) {}
         override fun onRecalculateSequenceClicked(callSign: String?) {}
-        override fun onMinimumSpacingDistanceSet(minimumSpacingDistanceNm: Double) {}
-        override fun onSetMinSpacingSelectionClicked(minSpacingSelectionNm: Double?) {}
+        override fun onMinimumSpacingDistanceSet(runway: String, minimumSpacingDistanceNm: Double) {}
+        override fun onSetMinSpacingSelectionClicked() {}
         override fun onOpenMetWindowClicked() {}
         override fun onOpenLandingRatesWindow() {}
         override fun onOpenNonSequencedWindow() {}

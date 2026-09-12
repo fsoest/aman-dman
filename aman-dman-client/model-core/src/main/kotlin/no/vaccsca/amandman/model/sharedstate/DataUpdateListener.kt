@@ -24,7 +24,7 @@ interface DataUpdateListener {
     /**
      * Called when minimum spacing configuration changes
      */
-    fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double)
+    fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNmByRunway: Map<String, Double>)
 
     /**
      * Called when weather data is updated

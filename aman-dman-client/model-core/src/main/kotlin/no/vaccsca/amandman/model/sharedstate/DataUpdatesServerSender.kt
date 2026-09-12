@@ -30,8 +30,8 @@ class DataUpdatesServerSender(
         sharedState.sendNonSequencedList(airportIcao, nonSequencedList)
     }
 
-    override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
-        sharedState.sendMinimumSpacing(airportIcao, minimumSpacingNm)
+    override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNmByRunway: Map<String, Double>) {
+        sharedState.sendMinimumSpacing(airportIcao, minimumSpacingNmByRunway)
     }
 
     override fun onFeederFixStateUpdated(airportIcao: String, feederFixState: FeederFixState) {

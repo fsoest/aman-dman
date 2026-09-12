@@ -9,7 +9,7 @@ import no.vaccsca.amandman.model.airport.RunwayStatus
 data class RunwayModeState(
     val airportIcao: String,
     val runwayStatuses: Map<String, RunwayStatus>,
-    val minimumSpacingNm: Double,
+    val minimumSpacingNmByRunway: Map<String, Double>,
     val runwayModes: List<String> // From settings
 ) {
     /**
@@ -39,9 +39,21 @@ data class RunwayModeState(
         val displayLabel =
             if (modeString.startsWith("S"))
                 modeString
-            else
-                "%s:%.1f".format(modeString, minimumSpacingNm)
+            else {
+                val runwaysInMode = modeString.split("/")
+                val spacings = runwaysInMode.map { minimumSpacingNmByRunway[it] ?: DEFAULT_MINIMUM_SPACING_NM }
+                val spacingLabel = if (spacings.distinct().size == 1) {
+                    "%.1f".format(spacings.first())
+                } else {
+                    spacings.joinToString("/") { "%.1f".format(it) }
+                }
+                "$modeString:$spacingLabel"
+            }
 
         return Pair(displayLabel, isActive)
+    }
+
+    private companion object {
+        private const val DEFAULT_MINIMUM_SPACING_NM = 3.0
     }
 }

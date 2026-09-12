@@ -24,7 +24,7 @@ interface AirportViewInterface {
     fun updateWeatherData(weather: VerticalWeatherProfile?)
     fun updateIntegrationStatuses(statuses: Map<IntegrationKind, IntegrationDisplayStatus>)
     fun updateRunwayModes(runwayModes: List<Pair<String, Boolean>>)
-    fun updateMinimumSpacing(minimumSpacingNm: Double)
+    fun updateMinimumSpacing(minimumSpacingNmByRunway: Map<String, Double>)
     fun updateDraggedLabel(timelineEvent: TimelineEvent, newInstant: Instant, isAvailable: Boolean)
     fun updateFeederFixState(feederFixState: FeederFixState)
 
@@ -36,7 +36,7 @@ interface AirportViewInterface {
     fun openMetWindow()
     fun openLandingRatesWindow()
     fun openNonSequencedWindow()
-    fun showMinimumSpacingDialog(default: Double)
+    fun showMinimumSpacingDialog(runways: List<String>, valuesByRunway: Map<String, Double>, defaultValue: Double)
     fun openSelectRunwayDialog(
         runwayEvent: RunwayEvent,
         runwayOptions: Set<String>,

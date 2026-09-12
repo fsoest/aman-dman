@@ -354,9 +354,9 @@ class MainPresenter(
             }
         }
 
-        override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
+        override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNmByRunway: Map<String, Double>) {
             runOnEdt {
-                listeners[airportIcao]?.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm)
+                listeners[airportIcao]?.onMinimumSpacingUpdated(airportIcao, minimumSpacingNmByRunway)
             }
         }
 

@@ -275,16 +275,16 @@ class MasterSlaveSharedStateHttpClient(
         return weather.data
     }
 
-    override fun getMinimumSpacing(airportIcao: String): Double {
-        val typeRef = object : TypeReference<SharedStateJson<Double>>() {}
+    override fun getMinimumSpacing(airportIcao: String): Map<String, Double> {
+        val typeRef = object : TypeReference<SharedStateJson<Map<String, Double>>>() {}
         val minimumSpacing = fetchStateJson(airportIcao, "minimum-spacing", typeRef)
         return minimumSpacing.data
     }
 
-    override fun sendMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
+    override fun sendMinimumSpacing(airportIcao: String, minimumSpacingNmByRunway: Map<String, Double>) {
         val sharedStateJson = SharedStateJson(
             lastUpdate = NtpClock.now(),
-            data = minimumSpacingNm
+            data = minimumSpacingNmByRunway
         )
         sendStateJson(airportIcao, "minimum-spacing", sharedStateJson)
     }

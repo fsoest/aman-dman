@@ -60,8 +60,8 @@ class AirportViewDelegate(
         airportViewState.runwayModes.value = runwayModes
     }
 
-    override fun updateMinimumSpacing(minimumSpacingNm: Double) = runOnUiThread {
-        airportViewState.minimumSpacingNm.value = minimumSpacingNm
+    override fun updateMinimumSpacing(minimumSpacingNmByRunway: Map<String, Double>) = runOnUiThread {
+        airportViewState.minimumSpacingNmByRunway.value = minimumSpacingNmByRunway
     }
 
     override fun updateDraggedLabel(timelineEvent: TimelineEvent, newInstant: Instant, isAvailable: Boolean) = runOnUiThread {
@@ -96,9 +96,9 @@ class AirportViewDelegate(
         airportView.openNonSequencedWindow()
     }
 
-    override fun showMinimumSpacingDialog(default: Double) = runOnUiThread {
-        airportView.openMinimumSpacingWindow(default) { newValue ->
-            airportPresenterInterface.onMinimumSpacingDistanceSet(newValue)
+    override fun showMinimumSpacingDialog(runways: List<String>, valuesByRunway: Map<String, Double>, defaultValue: Double) = runOnUiThread {
+        airportView.openMinimumSpacingWindow(runways, valuesByRunway, defaultValue) { runway, newValue ->
+            airportPresenterInterface.onMinimumSpacingDistanceSet(runway, newValue)
         }
     }
 

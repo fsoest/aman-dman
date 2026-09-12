@@ -36,7 +36,7 @@ data class AirportViewState(
     val runwayModes: SharedValue<List<Pair<String, Boolean>>> = SharedValue(emptyList()),
     val weatherProfile: SharedValue<VerticalWeatherProfile?> = SharedValue(null),
     val integrationStatuses: SharedValue<Map<IntegrationKind, IntegrationDisplayStatus>> = SharedValue(emptyMap()),
-    val minimumSpacingNm: SharedValue<Double> = SharedValue(3.0),
+    val minimumSpacingNmByRunway: SharedValue<Map<String, Double>> = SharedValue(emptyMap()),
     val feederFixState: SharedValue<FeederFixState> = SharedValue(FeederFixState()),
     val showDepartures: SharedValue<Boolean> = SharedValue(false),
     val aircraftSelection: SharedValue<AircraftSelection?> = SharedValue(null),
