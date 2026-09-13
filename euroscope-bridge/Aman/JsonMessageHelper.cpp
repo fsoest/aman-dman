@@ -89,6 +89,7 @@ const std::string JsonMessageHelper::getJsonOfArrivalDetailsUpdates(const std::v
         addNullableString(detailsObject, "assignedRunway", inbound.arrivalRunway, allocator);
         addNullableString(detailsObject, "assignedStar", inbound.assignedStar, allocator);
         addNullableString(detailsObject, "assignedDirect", inbound.assignedDirectRouting, allocator);
+        addNullablePositiveInt(detailsObject, "assignedHeading", inbound.assignedHeading, allocator);
         addNullableString(detailsObject, "trackingController", inbound.trackingController, allocator);
         addNullableString(detailsObject, "scratchPad", inbound.scratchPad, allocator);
         addNullablePositiveInt(detailsObject, "flightPlanTas", inbound.flightPlanTas, allocator);
