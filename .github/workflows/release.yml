@@ -70,6 +70,39 @@ jobs:
           }
           Write-Host "MFC/ATL component confirmed at: $verify"
 
+      - name: Diagnose available MFC/ATL packages
+        shell: pwsh
+        run: |
+          try {
+            $instancesRoot = "C:\ProgramData\Microsoft\VisualStudio\Packages\_Instances"
+            $instanceDir = Get-ChildItem $instancesRoot -Directory | Select-Object -First 1
+            $statePath = Join-Path $instanceDir.FullName "state.json"
+            Write-Host "Reading $statePath"
+            $state = Get-Content $statePath -Raw | ConvertFrom-Json
+
+            if ($state.packages) {
+              $packages = $state.packages | Where-Object { $_.id -match "(?i)mfc|atl" }
+              Write-Host "Installed packages matching MFC/ATL:"
+              $packages | ForEach-Object { Write-Host " - $($_.id)  [$($_.version)]  installed=$($_.installed)" }
+            } else {
+              Write-Host "No 'packages' property found. Top-level keys in state.json:"
+              $state.PSObject.Properties.Name | ForEach-Object { Write-Host " - $_" }
+              Write-Host "Raw content (first 4000 chars):"
+              Write-Host (Get-Content $statePath -Raw).Substring(0, [Math]::Min(4000, (Get-Content $statePath -Raw).Length))
+            }
+          } catch {
+            Write-Host "Diagnostic step failed: $_"
+          }
+
+          Write-Host "---"
+          Write-Host "PlatformToolset(s) referenced by the project:"
+          Select-String -Path "euroscope-bridge\Aman\Aman.vcxproj" -Pattern "PlatformToolset" | ForEach-Object { Write-Host " - $($_.Line.Trim())" }
+
+          Write-Host "---"
+          Write-Host "Installed VC toolset directories:"
+          Get-ChildItem "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC" -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host " - $($_.Name)" }
+
       - name: Build C++ Project
         run: |
           $version = "${{ env.VERSION }}" -replace '^v', ''
