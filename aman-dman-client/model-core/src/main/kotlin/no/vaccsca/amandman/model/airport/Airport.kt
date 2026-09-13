@@ -61,6 +61,12 @@ data class RunwayThreshold(
             .filter { it.matches(assignedArrivalName) }
             .mapNotNull { profile -> profile.sequencingAreaId }
             .lastOrNull()
+
+    fun routeOverrideFor(assignedArrivalName: String?): RouteOverride? =
+        arrivalProfiles
+            .filter { it.matches(assignedArrivalName) }
+            .mapNotNull { profile -> profile.routeOverride }
+            .lastOrNull()
 }
 
 data class RunwayArrivalProfile(
@@ -68,6 +74,7 @@ data class RunwayArrivalProfile(
     val fixExpectations: List<ArrivalFixExpectation>,
     val frozenSequenceAreaId: String? = null,
     val sequencingAreaId: String? = null,
+    val routeOverride: RouteOverride? = null,
 ) {
     fun matches(assignedArrivalName: String?): Boolean {
         val normalizedPattern = arrivalNamePattern.trim().uppercase()
@@ -86,3 +93,12 @@ data class RunwayArrivalProfile(
         return patternRegex.matches(normalizedArrivalName)
     }
 }
+
+/**
+ * Overrides the route flown after [afterFix] for STARs that are rarely flown in full, replacing
+ * the remaining filed route with [waypointNames] - real fixes already present on the STAR.
+ */
+data class RouteOverride(
+    val afterFix: String,
+    val waypointNames: List<String>,
+)

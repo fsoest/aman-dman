@@ -16,6 +16,19 @@ data class ArrivalProfileYaml(
 
     @field:NotNull
     val fixes: List<ArrivalProfileFixYaml> = emptyList(),
+
+    @field:JsonPropertyDescription("Optional override of the route flown after a given fix, for STARs that are rarely flown in full (e.g. downwind procedures routinely cut short by vectoring)")
+    val routeOverride: RouteOverrideYaml? = null,
+)
+
+data class RouteOverrideYaml(
+    @field:NotNull
+    @field:JsonPropertyDescription("Fix after which the filed route is unreliable and should be replaced by 'waypoints'")
+    val afterFix: String,
+
+    @field:NotNull
+    @field:JsonPropertyDescription("The fixes actually flown after afterFix, in order. Must be real fixes already present on the STAR.")
+    val waypoints: List<String> = emptyList(),
 )
 
 data class ArrivalProfileFixYaml(
