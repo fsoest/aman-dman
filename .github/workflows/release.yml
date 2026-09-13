@@ -70,38 +70,69 @@ jobs:
           }
           Write-Host "MFC/ATL component confirmed at: $verify"
 
-      - name: Diagnose available MFC/ATL packages
+      - name: Install MFC/ATL for the pinned v143 toolset
         shell: pwsh
         run: |
-          try {
-            $instancesRoot = "C:\ProgramData\Microsoft\VisualStudio\Packages\_Instances"
-            $instanceDir = Get-ChildItem $instancesRoot -Directory | Select-Object -First 1
-            $statePath = Join-Path $instanceDir.FullName "state.json"
-            Write-Host "Reading $statePath"
-            $state = Get-Content $statePath -Raw | ConvertFrom-Json
+          $vsInstallPath = "C:\Program Files\Microsoft Visual Studio\18\Enterprise"
+          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+          $toolsetsRoot = Join-Path $vsInstallPath "VC\Tools\MSVC"
 
-            if ($state.packages) {
-              $packages = $state.packages | Where-Object { $_.id -match "(?i)mfc|atl" }
-              Write-Host "Installed packages matching MFC/ATL:"
-              $packages | ForEach-Object { Write-Host " - $($_.id)  [$($_.version)]  installed=$($_.installed)" }
-            } else {
-              Write-Host "No 'packages' property found. Top-level keys in state.json:"
-              $state.PSObject.Properties.Name | ForEach-Object { Write-Host " - $_" }
-              Write-Host "Raw content (first 4000 chars):"
-              Write-Host (Get-Content $statePath -Raw).Substring(0, [Math]::Min(4000, (Get-Content $statePath -Raw).Length))
-            }
-          } catch {
-            Write-Host "Diagnostic step failed: $_"
+          # v143 (VS2022-family) toolsets are versioned 14.30-14.4x. Pick the newest one in that range
+          # rather than hardcoding an exact build number, since the runner image updates over time.
+          $v143Dir = Get-ChildItem $toolsetsRoot -Directory | Where-Object {
+            $parts = $_.Name -split '\.'
+            $parts.Count -ge 2 -and [int]$parts[0] -eq 14 -and [int]$parts[1] -ge 30 -and [int]$parts[1] -le 49
+          } | Sort-Object Name -Descending | Select-Object -First 1
+
+          if (-not $v143Dir) {
+            Write-Host "Toolset directories present:"
+            Get-ChildItem $toolsetsRoot -Directory | ForEach-Object { Write-Host " - $($_.Name)" }
+            throw "Could not find a v143-family (14.30-14.4x) MSVC toolset directory under $toolsetsRoot"
           }
 
-          Write-Host "---"
-          Write-Host "PlatformToolset(s) referenced by the project:"
-          Select-String -Path "euroscope-bridge\Aman\Aman.vcxproj" -Pattern "PlatformToolset" | ForEach-Object { Write-Host " - $($_.Line.Trim())" }
+          $toolsetDir = $v143Dir.Name
+          $toolsetKey = $toolsetDir.Substring(0, $toolsetDir.LastIndexOf('.'))
+          $atlmfcPath = Join-Path $v143Dir.FullName "atlmfc\include"
+          Write-Host "v143 toolset directory: $toolsetDir (key: $toolsetKey)"
 
-          Write-Host "---"
-          Write-Host "Installed VC toolset directories:"
-          Get-ChildItem "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC" -Directory -ErrorAction SilentlyContinue |
-            ForEach-Object { Write-Host " - $($_.Name)" }
+          if (Test-Path $atlmfcPath) {
+            Write-Host "MFC/ATL already present at $atlmfcPath"
+          } else {
+            Write-Host "MFC/ATL missing for toolset $toolsetDir. Fetching VS channel manifest to find the exact component id..."
+            $channel = Invoke-RestMethod "https://aka.ms/vs/18/stable/channel"
+            $manifestItem = $channel.channelItems |
+              Where-Object { $_.type -eq "Manifest" -and $_.id -eq "Microsoft.VisualStudio.Manifests.VisualStudio" } |
+              Select-Object -First 1
+            $manifestUrl = $manifestItem.payloads[0].url
+            $manifest = Invoke-RestMethod $manifestUrl
+
+            $candidates = $manifest.packages |
+              Where-Object { $_.id -match "(?i)^Microsoft\.VisualStudio\.Component\.VC\..*MFC" } |
+              Select-Object -ExpandProperty id -Unique | Sort-Object
+            Write-Host "Candidate MFC component ids in manifest:"
+            $candidates | ForEach-Object { Write-Host " - $_" }
+
+            $target = $candidates | Where-Object { $_ -match [Regex]::Escape($toolsetKey) } | Select-Object -First 1
+            if (-not $target) {
+              throw "No MFC component id matching toolset key '$toolsetKey' found in the manifest. See candidates above."
+            }
+
+            Write-Host "Installing $target ..."
+            $proc = Start-Process -FilePath $installer -ArgumentList @(
+              "modify", "--installPath", "`"$vsInstallPath`"",
+              "--add", $target,
+              "--quiet", "--norestart"
+            ) -NoNewWindow -Wait -PassThru
+            Write-Host "vs_installer exit code: $($proc.ExitCode)"
+            if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
+              throw "Install of $target failed with exit code $($proc.ExitCode)"
+            }
+          }
+
+          if (-not (Test-Path $atlmfcPath)) {
+            throw "atlmfc still missing at $atlmfcPath after install attempt."
+          }
+          Write-Host "Confirmed: $atlmfcPath exists."
 
       - name: Build C++ Project
         run: |
