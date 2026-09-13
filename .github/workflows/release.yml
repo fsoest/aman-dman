@@ -33,14 +33,42 @@ jobs:
       - name: Install MFC/ATL C++ components
         shell: pwsh
         run: |
-          $vsInstallPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
-          & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify `
-            --installPath "$vsInstallPath" `
-            --add Microsoft.VisualStudio.Component.VC.ATLMFC `
-            --quiet --norestart --wait
-          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 3010) {
-            throw "vs_installer failed with exit code $LASTEXITCODE"
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+          $vsInstallPath = & $vswhere -latest -property installationPath
+          Write-Host "VS install path: $vsInstallPath"
+
+          function Install-Mfc {
+            $proc = Start-Process -FilePath $installer -ArgumentList @(
+              "modify",
+              "--installPath", "`"$vsInstallPath`"",
+              "--add", "Microsoft.VisualStudio.Component.VC.ATLMFC",
+              "--quiet", "--norestart"
+            ) -NoNewWindow -Wait -PassThru
+            return $proc.ExitCode
           }
+
+          $exitCode = Install-Mfc
+          Write-Host "vs_installer exit code: $exitCode"
+          if ($exitCode -ne 0 -and $exitCode -ne 3010) {
+            throw "vs_installer failed with exit code $exitCode"
+          }
+
+          $verify = & $vswhere -latest -requires Microsoft.VisualStudio.Component.VC.ATLMFC -property installationPath
+          if (-not $verify) {
+            Write-Host "MFC/ATL not detected after first attempt, retrying once..."
+            $exitCode = Install-Mfc
+            Write-Host "vs_installer retry exit code: $exitCode"
+            if ($exitCode -ne 0 -and $exitCode -ne 3010) {
+              throw "vs_installer retry failed with exit code $exitCode"
+            }
+            $verify = & $vswhere -latest -requires Microsoft.VisualStudio.Component.VC.ATLMFC -property installationPath
+          }
+
+          if (-not $verify) {
+            throw "MFC/ATL component still not detected by vswhere after install attempts."
+          }
+          Write-Host "MFC/ATL component confirmed at: $verify"
 
       - name: Build C++ Project
         run: |
