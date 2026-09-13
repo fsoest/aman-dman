@@ -482,6 +482,7 @@ internal fun ArrivalJson.toDomain(
             icaoType = requiredDetails.icaoType,
             assignedStar = requiredDetails.assignedStar,
             assignedDirect = requiredDetails.assignedDirect,
+            assignedHeadingDeg = requiredDetails.assignedHeading,
             trackingController = requiredDetails.trackingController,
             scratchPad = requiredDetails.scratchPad,
             currentPosition = AircraftPosition(

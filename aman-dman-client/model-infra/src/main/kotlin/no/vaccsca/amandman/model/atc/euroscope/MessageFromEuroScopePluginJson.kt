@@ -85,6 +85,7 @@ data class ArrivalDetailsJson(
     val assignedRunway: String?,
     val assignedStar: String?,
     val assignedDirect: String?,
+    val assignedHeading: Int? = null,
     val trackingController: String?,
     val scratchPad: String?,
     val arrivalAirportIcao: String,

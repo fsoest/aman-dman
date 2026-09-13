@@ -13,6 +13,7 @@ import no.vaccsca.amandman.model.navigation.Waypoint
  * @param wakeCategory The wake turbulence category of the aircraft.
  * @param assignedStar The name of the STAR assigned to the aircraft, if any.
  * @param assignedDirect The direct waypoint assigned to the aircraft, if any.
+ * @param assignedHeadingDeg The controller-assigned heading, if the aircraft is currently being vectored.
  * @param trackingController The position ID of the controller currently tracking.
  * @param scratchPad The scratchpad text for the aircraft, if any.
  * @param currentPosition The current position of the aircraft.
@@ -28,6 +29,7 @@ data class AtcClientArrivalData(
     val icaoType: String,
     val assignedStar: String?,
     val assignedDirect: String?,
+    val assignedHeadingDeg: Int? = null,
     val trackingController: String?,
     val scratchPad: String?,
     val currentPosition: AircraftPosition,

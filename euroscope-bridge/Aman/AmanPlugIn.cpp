@@ -178,6 +178,7 @@ AmanAircraft AmanPlugIn::getArrivalDetails(CFlightPlan flightPlan) {
     ac.assignedStar = fpd.GetStarName();
     ac.icaoType = fpd.GetAircraftFPType();
     ac.assignedDirectRouting = controllerAssignedData.GetDirectToPointName();
+    ac.assignedHeading = controllerAssignedData.GetAssignedHeading();
     ac.trackingController = flightPlan.GetTrackingControllerId();
     ac.scratchPad = controllerAssignedData.GetScratchPadString();
     ac.remainingRoute = findExtractedRoutePoints(flightPlan);
@@ -379,6 +380,7 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& a
         ac.assignedStar = assignedStarName;
         ac.icaoType = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetAircraftFPType();
         ac.assignedDirectRouting = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetDirectToPointName();
+        ac.assignedHeading = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetAssignedHeading();
         ac.trackingController = rt.GetCorrelatedFlightPlan().GetTrackingControllerId();
         ac.scratchPad = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString();
         ac.groundSpeed = rt.GetPosition().GetReportedGS();

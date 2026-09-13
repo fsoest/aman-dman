@@ -52,11 +52,21 @@ object ArrivalEventService {
                 ?.role
         }
 
-        val routeOverride = runwayInfo.routeOverrideFor(arrival.assignedStar)
-        val remainingWaypoints = if (routeOverride != null) {
-            RouteOverrideService.apply(arrival.remainingWaypoints, arrival.extractedRoute, routeOverride)
-        } else {
-            arrival.remainingWaypoints
+        val headingVectorRoute = arrival.assignedHeadingDeg?.let { assignedHeadingDeg ->
+            HeadingVectorService.projectOntoFinalApproachCourse(
+                currentPosition = arrival.currentPosition.latLng,
+                assignedHeadingDeg = assignedHeadingDeg,
+                runway = runwayInfo,
+            )
+        }
+
+        val remainingWaypoints = headingVectorRoute ?: run {
+            val routeOverride = runwayInfo.routeOverrideFor(arrival.assignedStar)
+            if (routeOverride != null) {
+                RouteOverrideService.apply(arrival.remainingWaypoints, arrival.extractedRoute, routeOverride)
+            } else {
+                arrival.remainingWaypoints
+            }
         }
 
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(

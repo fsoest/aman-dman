@@ -40,6 +40,7 @@ public:
     int flightLevel;
     int flightPlanTas;
     int track;
+    int assignedHeading;
 };
 
 struct AircraftSelection {
