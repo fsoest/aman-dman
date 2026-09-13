@@ -4,9 +4,11 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.aircraft.AircraftPosition
 import no.vaccsca.amandman.model.airport.Airport
 import no.vaccsca.amandman.model.airport.AirportArea
+import no.vaccsca.amandman.model.airport.RouteOverride
 import no.vaccsca.amandman.model.airport.RunwayArrivalProfile
 import no.vaccsca.amandman.model.airport.RunwayThreshold
 import no.vaccsca.amandman.model.atc.AtcClientArrivalData
+import no.vaccsca.amandman.model.atc.ExtractedRoutePoint
 import no.vaccsca.amandman.model.navigation.LatLng
 import no.vaccsca.amandman.model.navigation.Waypoint
 import no.vaccsca.amandman.model.planning.SequencingStateEvaluator
@@ -209,9 +211,74 @@ class SequencingStateEvaluatorTest {
         assertFalse(result)
     }
 
+    @Test
+    fun `locked when aircraft has crossed a configured route override's afterFix, even outside area and horizon`() {
+        val airport = airportWithArea.copy(
+            runways = mapOf(
+                "19L" to runway.copy(
+                    arrivalProfiles = listOf(
+                        RunwayArrivalProfile(
+                            arrivalNamePattern = "*",
+                            fixExpectations = emptyList(),
+                            routeOverride = RouteOverride(afterFix = "ANEKI", waypointNames = listOf("FINAL")),
+                        )
+                    )
+                )
+            )
+        )
+
+        val result = SequencingStateEvaluator.isInLockedSequenceWindow(
+            airport = airport,
+            arrival = arrival(
+                position = LatLng(60.2, 11.2),
+                extractedRoute = listOf(
+                    ExtractedRoutePoint(id = "ANEKI", latLng = LatLng(60.3, 11.3), isActive = false),
+                    ExtractedRoutePoint(id = "TITLA", latLng = LatLng(60.1, 11.1), isActive = true),
+                ),
+            ),
+            estimatedTime = Instant.parse("2026-04-12T12:35:00Z"),
+            now = Instant.parse("2026-04-12T12:00:00Z"),
+        )
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `not locked by route override before afterFix is crossed`() {
+        val airport = airportWithArea.copy(
+            runways = mapOf(
+                "19L" to runway.copy(
+                    arrivalProfiles = listOf(
+                        RunwayArrivalProfile(
+                            arrivalNamePattern = "*",
+                            fixExpectations = emptyList(),
+                            routeOverride = RouteOverride(afterFix = "ANEKI", waypointNames = listOf("FINAL")),
+                        )
+                    )
+                )
+            )
+        )
+
+        val result = SequencingStateEvaluator.isInLockedSequenceWindow(
+            airport = airport,
+            arrival = arrival(
+                position = LatLng(60.2, 11.2),
+                extractedRoute = listOf(
+                    ExtractedRoutePoint(id = "ANEKI", latLng = LatLng(60.3, 11.3), isActive = true),
+                    ExtractedRoutePoint(id = "TITLA", latLng = LatLng(60.1, 11.1), isActive = true),
+                ),
+            ),
+            estimatedTime = Instant.parse("2026-04-12T12:35:00Z"),
+            now = Instant.parse("2026-04-12T12:00:00Z"),
+        )
+
+        assertFalse(result)
+    }
+
     private fun arrival(
         position: LatLng,
         altitudeFt: Int = 10000,
+        extractedRoute: List<ExtractedRoutePoint> = emptyList(),
     ) = AtcClientArrivalData(
         callsign = "SAS123",
         icaoType = "B738",
@@ -226,6 +293,7 @@ class SequencingStateEvaluatorTest {
             groundspeedKts = 250,
             trackDeg = 180,
         ),
+        extractedRoute = extractedRoute,
         remainingWaypoints = listOf(Waypoint("TITLA", LatLng(60.1, 11.1))),
         assignedRunway = "19L",
         arrivalAirportIcao = "ENGM",

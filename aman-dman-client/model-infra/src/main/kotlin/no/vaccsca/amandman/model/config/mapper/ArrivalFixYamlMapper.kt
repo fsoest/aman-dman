@@ -2,10 +2,12 @@ package no.vaccsca.amandman.model.config.mapper
 
 import no.vaccsca.amandman.model.airport.ArrivalFixExpectation
 import no.vaccsca.amandman.model.airport.ArrivalFixRole
+import no.vaccsca.amandman.model.airport.RouteOverride
 import no.vaccsca.amandman.model.airport.RunwayArrivalProfile
 import no.vaccsca.amandman.model.config.yaml.ArrivalFixRoleYaml
 import no.vaccsca.amandman.model.config.yaml.ArrivalProfileFixYaml
 import no.vaccsca.amandman.model.config.yaml.ArrivalProfileYaml
+import no.vaccsca.amandman.model.config.yaml.RouteOverrideYaml
 
 private val FIX_NAME_REGEX = Regex("^[A-Z0-9]{1,5}$")
 private val ARRIVAL_NAME_PATTERN_REGEX = Regex("^[A-Z0-9*]+$")
@@ -100,8 +102,32 @@ private fun List<ArrivalProfileYaml>.toDomainProfiles(
                 runwayPattern = runwayPattern,
                 arrivalNamePattern = normalizedArrivalName,
             ),
+            routeOverride = profile.routeOverride?.toDomainRouteOverride(rowPrefix),
         )
     }
+}
+
+private fun RouteOverrideYaml.toDomainRouteOverride(rowPrefix: String): RouteOverride {
+    val normalizedAfterFix = afterFix.trim().uppercase()
+    require(FIX_NAME_REGEX.matches(normalizedAfterFix)) {
+        "$rowPrefix routeOverride has invalid afterFix '$afterFix'. Expected 1-5 uppercase alphanumeric characters."
+    }
+    require(waypoints.isNotEmpty()) {
+        "$rowPrefix routeOverride must define at least one waypoint."
+    }
+
+    val normalizedWaypoints = waypoints.map { waypoint ->
+        val normalizedWaypoint = waypoint.trim().uppercase()
+        require(FIX_NAME_REGEX.matches(normalizedWaypoint)) {
+            "$rowPrefix routeOverride has invalid waypoint '$waypoint'. Expected 1-5 uppercase alphanumeric characters."
+        }
+        normalizedWaypoint
+    }
+
+    return RouteOverride(
+        afterFix = normalizedAfterFix,
+        waypointNames = normalizedWaypoints,
+    )
 }
 
 private fun List<ArrivalProfileFixYaml>.toDomainFixExpectations(

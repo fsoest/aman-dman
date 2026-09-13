@@ -15,6 +15,12 @@ object SequencingStateEvaluator {
     ): Boolean {
         val assignedRunway = arrival.assignedRunway ?: return false
         val runway = airport.runways[assignedRunway] ?: return false
+
+        val afterFix = runway.routeOverrideFor(arrival.assignedStar)?.afterFix
+        if (afterFix != null && RouteOverrideService.hasCrossed(afterFix, arrival.extractedRoute)) {
+            return true
+        }
+
         val lockedAreaId = runway.frozenSequenceAreaIdFor(arrival.assignedStar)
         val lockedArea = lockedAreaId?.let { airport.areas[it] }
 

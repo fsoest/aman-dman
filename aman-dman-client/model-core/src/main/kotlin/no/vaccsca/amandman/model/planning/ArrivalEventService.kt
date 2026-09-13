@@ -52,10 +52,17 @@ object ArrivalEventService {
                 ?.role
         }
 
+        val routeOverride = runwayInfo.routeOverrideFor(arrival.assignedStar)
+        val remainingWaypoints = if (routeOverride != null) {
+            RouteOverrideService.apply(arrival.remainingWaypoints, arrival.extractedRoute, routeOverride)
+        } else {
+            arrival.remainingWaypoints
+        }
+
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = arrival.currentPosition,
             assignedRunway = arrival.assignedRunway,
-            remainingWaypoints = arrival.remainingWaypoints,
+            remainingWaypoints = remainingWaypoints,
             spatialWeatherField = weatherField,
             assignedStar = arrival.assignedStar,
             aircraftPerformance = aircraftPerformance,
